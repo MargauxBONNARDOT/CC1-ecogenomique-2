@@ -3,10 +3,10 @@ title: "R Notebook"
 output: github_document
 ---
 
+premier test de controle de versihollon
+
 
 ```{r}
-install.packages("gitcreds")
-library(gitcreds)
-gitcreds_set()
+
 ```
 
