@@ -3,10 +3,127 @@ title: "R Notebook"
 output: github_document
 ---
 
-premier test de controle de versihollon
-lalalalalalalalalala
+```{bash}
+sudo apt-get update -y
+sudo apt-get install -y libglpk-dev 
+sudo apt-get install -y liblzma-dev libbz2-dev
+```
 
 ```{r}
-
+# package de r-studio
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("BiocStyle")
+BiocManager::install("Rhtslib")
+#biocmanager est un site de depot, les pakages depedent d'autres packages et biomarqueur regle tous pour nous
+# on verif que tous a ete installé et on instale d'autre trucs
 ```
+
+```{r}
+library("knitr")
+library("BiocStyle")
+.cran_packages <- c("ggplot2", "gridExtra", "devtools")
+install.packages(.cran_packages) 
+.bioc_packages <- c("dada2", "phyloseq", "DECIPHER", "phangorn")
+BiocManager::install(.bioc_packages)
+# Load packages into session, and print package version
+sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
+```
+
+```{bash}
+cd~
+wget https://mothur.s3.us-east-2.amazonaws.com/wiki/miseqsopdata.zip
+unzip miseqsopdata.zip
+```
+
+````{r}
+set.seed(100)
+miseq_path <- "./MiSeq_SOP" 
+list.files(miseq_path)
+````
+
+````{r}
+set.seed(100)
+miseq_path <- "/home/rstudio/MiSeq_SOP"
+list.files(miseq_path)
+````
+
+````{r}
+# Si on quite R(pas R studio) il faut run ca pour qu'il ait bien les packages
+.cran_packages <- c("ggplot2", "gridExtra", "devtools")
+.bioc_packages <- c("dada2", "phyloseq", "DECIPHER", "phangorn")
+sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
+````
+
+
+````{r}
+# Sort to unsure foward and reverse reads are in the same order
+
+fnFs <- sort(list.files(miseq_path, pattern="_R1_001.fastq"))
+fnRs <- sort(list.files(miseq_path, pattern="_R2_001.fastq"))
+#F c'est pour foward et R pour reverse
+
+# Extract sample names, assuming filenames have format: SAMPLENAME_XXX.fastq
+sampleNames <- sapply(strsplit(fnFs, "_"), `[`, 1)
+# apply
+# on garde que ce qui est séparé par underscore
+
+# Specify the full path to the fnFs and fnRs
+# on change ce qu'il y a ds objets
+# contruire un chemin vers fichier à partir de composant, independant de la plateforme
+fnFs <- file.path(miseq_path, fnFs)
+fnRs <- file.path(miseq_path, fnRs)
+````
+
+````{r}
+fnFs[1:3] #affiches les 3 premier elements de fnFs
+fnRs[1:3]
+````
+
+
+Most Illumina sequencing data shows a trend of decreasing average quality towards the end of sequencing reads.
+The first two forward reads:
+````{r}
+# va lire les 2 premiers elements en Foward
+plotQualityProfile(fnFs[1:2])
+# score de qualité
+#heat map de la freq des score de qualité pour chacune des positions
+# donc en noir: pour tous les read, le score de qualité associé a chacune des bases le plus frequent c'est 38
+#bon score de qualité vers 38/39
+# Q score va de 0 à 50, à 30, 1/1000 chance (en fait y'3 zero =30) que cette base la est pas la bonne base
+
+#la ligne rouge:
+#illumina: read de 250
+#--> distribution des longueur de read
+#plus une seq est longue, plus on a d'erreur
+
+
+# pour les reverses
+plotQualityProfile(fnRs[1:2])
+#perte de qualité à partir d'une longueur de 125
+# a fin de seq on a score de qualité de 25
+
+
+# Nous on veut garder que les sequences de bonnes qualité
+# illumina faut 2x250bp
+# V4 fait 300pb
+# on va essayer aligner foward et reverse pour reformer les v4
+#mais si on enleve toute mauvase qualité, ca enleve le chevauchement!!! donc faut conserver alignement (au moins 1à, mais vauut mieux alignement de 20)
+
+
+#Here, the forward reads maintain high quality throughout, while the quality of the reverse reads drops significantly #at about position 160. Therefore, we choose to truncate the forward reads at position 245, and the reverse reads at #position 160. 
+#We also choose to trim the first 10 nucleotides of each read based on empirical observations across many Illumina #datasets that these base positions are particularly likely to contain pathological errors.
+#la fonction plotQualityProfile s'en charge
+
+````
+
+````{r}
+
+We define the filenames for the filtered fastq.gz files:
+
+
+
+
+````
+
 
