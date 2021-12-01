@@ -262,9 +262,8 @@ head(out)
   fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE,
         rearrangement = "stochastic", control = pml.control(trace = 0))
      detach("package:phangorn", unload=TRUE)
+  
   fitGTR
-  
-  
     #Rate matrix:
    # a c g t
   #a 0 1 1 1
@@ -275,10 +274,124 @@ head(out)
   #Base frequencies:  
   #0.25 0.25 0.25 0.25
   
-  
-  
+  plot(fitGTR)
+
 ````
 
 
+````{r}
+# Combine data into a phyloseq object
+
+  samdf <- read.csv("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/MIMARKS_Data_combined.csv",header=TRUE)
+  samdf$SampleID <- paste0(gsub("00", "", samdf$host_subject_id), "D", samdf$age-21)
+  samdf <- samdf[!duplicated(samdf$SampleID),] # Remove dupicate entries for reverse reads
+  rownames(seqtabAll) <- gsub("124", "125", rownames(seqtabAll)) # Fix discrepancy
+  all(rownames(seqtabAll) %in% samdf$SampleID) # TRUE
+
+
+  rownames(samdf) <- samdf$SampleID
+  keep.cols <- c("collection_date", "biome", "target_gene", "target_subfragment","host_common_name", "host_subject_id", "age", "sex", "body_product", "tot_mass", "diet", "family_relationship", "genotype", "SampleID") 
+  samdf <- samdf[rownames(seqtabAll), keep.cols]
+
+  #The full suite of data for this study – the sample-by-sequence feature table, the sample metadata, 
+  #the sequence taxonomies, and the phylogenetic tree – can now be combined into a single object.
+  ps <- phyloseq(otu_table(seqtabNoC, taxa_are_rows=FALSE), 
+               sample_data(samdf), 
+               tax_table(taxTab),phy_tree(fitGTR$tree))
+  ps <- prune_samples(sample_names(ps) != "Mock", ps) # Remove mock sample
+  ps
+  
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:         [ 215 taxa and 19 samples ]
+    ## sample_data() Sample Data:       [ 19 samples by 14 sample variables ]
+    ## tax_table()   Taxonomy Table:    [ 215 taxa by 6 taxonomic ranks ]
+     ## phy_tree()    Phylogenetic Tree: [ 215 tips and 213 internal nodes ]
+````
+
+
+````{r}
+# Using phyloseq
+  # phyloseq is an R package 
+  # table metadonnées des OTU
+
+# Loading the data
+  # pas beosin de le faire (recuperer objet phylosec sur lien)
+  # "https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/ps.rds"
+
+
+# Filtering
+  #Taxonomic Filtering
+    # on peut enlever seq en se basant sur asignation taxonomique
+    # seq non indentifiée (quand phylum est null ou uncharacterize)
+    rank_names(ps)
+    table(tax_table(ps)[, "Phylum"], exclude = NULL)
+    ps <- subset_taxa(ps, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
+
+    prevdf = apply(X = otu_table(ps),
+                  MARGIN = ifelse(taxa_are_rows(ps), yes = 1, no = 2),
+                   FUN = function(x){sum(x > 0)})
+    # Add taxonomy and total read counts to this data.frame
+    prevdf = data.frame(Prevalence = prevdf,
+                        TotalAbundance = taxa_sums(ps),
+                        tax_table(ps))
+    
+    # Compute the total and average prevalences of the features in each phylum.
+    plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))})
+
+    
+    # Define phyla to filter
+      filterPhyla = c("Fusobacteria", "Deinococcus-Thermus")
+      # Filter entries with unidentified Phylum.
+      ps1 = subset_taxa(ps, !Phylum %in% filterPhyla)
+      ps1
+      
+      
+````
+
+
+```{r}
+.cran_packages <- c( "shiny","miniUI", "caret", "pls", "e1071", "ggplot2", "randomForest", "dplyr", "ggrepel", "nlme", "devtools",
+                  "reshape2", "PMA", "structSSI", "ade4",
+                  "ggnetwork", "intergraph", "scales")
+.github_packages <- c("jfukuyama/phyloseqGraphTest")
+.bioc_packages <- c("genefilter", "impute")
+```
+
+```{r}
+.inst <- .cran_packages %in% installed.packages()
+if (any(!.inst)){
+  install.packages(.cran_packages[!.inst],repos = "http://cran.rstudio.com/")
+}
+```
+
+```{r}
+.inst <- .github_packages %in% installed.packages()
+if (any(!.inst)){
+  devtools::install_github(.github_packages[!.inst])
+}
+```
+
+```{r}
+.inst <- .bioc_packages %in% installed.packages()
+if(any(!.inst)){BiocManager::install(.bioc_packages[!.inst])
+}
+```
+
+premiere note:
+Faire jusque ordination
+;md est interpreté par github comme page web
+#titre
+##sous titre
+###sous sous titre
+mettre dans 2 script separé instalation des package(library/sapply) et l'autre 
+car il faut pas refaire instalation des packages
+
+2 eme note:
+exercice: influence saisons et profondeur sur microbiote (voir slack)
+
+3eme note:
+donnée de l'article qu'on a presenter
+https://www.ebi.ac.uk/ena/browser/view/SRX6374530?show=reads
+hhh
 
 
