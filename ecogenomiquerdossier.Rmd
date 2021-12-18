@@ -1,9 +1,14 @@
 ---
-title: "R Notebook"
+title: "Workflow for Microbiome Data Analysis: from raw reads to community analyses"
 output: github_document
 ---
 
-```{bash}
+#Workflow for Microbiome Data Analysis: from raw reads to community analyses.
+
+##Methods
+###Amplicon bioinformatics: from raw reads to tables
+
+```{bash, include = FALSE}
 #sudo apt-get update -y
 #sudo apt-get install -y libglpk-dev 
 #sudo apt-get install -y liblzma-dev libbz2-dev
@@ -24,7 +29,7 @@ sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
 .bioc_packages <- c("genefilter", "impute")
 ```
 
-```{r}
+```{r, include = FALSE}
 # package de r-studio
 #if (!requireNamespace("BiocManager", quietly = TRUE))
 #    install.packages("BiocManager")
@@ -34,7 +39,7 @@ sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
 # on verif que tous a ete installé et on instale d'autre trucs
 ```
 
-```{r}
+```{r, include=FALSE}
 #library("knitr")
 #library("BiocStyle")
 #.cran_packages <- c("ggplot2", "gridExtra", "devtools")
@@ -45,7 +50,7 @@ sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
 #sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
 ```
 
-```{bash}
+```{bash, include = FALSE}
 #cd~
 #wget https://mothur.s3.us-east-2.amazonaws.com/wiki/miseqsopdata.zip
 #unzip miseqsopdata.zip
@@ -63,29 +68,43 @@ miseq_path <- "/home/rstudio/MiSeq_SOP"
 list.files(miseq_path)
 ```
 
-```{r}
+
+```{r, include=FALSE}
 # Si on quite R(pas R studio) il faut run ca pour qu'il ait bien les packages
+```
+
+```{r}
 .cran_packages <- c("ggplot2", "gridExtra", "devtools")
 .bioc_packages <- c("dada2", "phyloseq", "DECIPHER", "phangorn")
 sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
 ```
 
+###Filter and Trim
+
+Sort to unsure foward and reverse reads are in the same order
 
 ```{r}
-# Sort to unsure foward and reverse reads are in the same order
-
 fnFs <- sort(list.files(miseq_path, pattern="_R1_001.fastq"))
 fnRs <- sort(list.files(miseq_path, pattern="_R2_001.fastq"))
-#F c'est pour foward et R pour reverse
+```
 
-# Extract sample names, assuming filenames have format: SAMPLENAME_XXX.fastq
-sampleNames <- sapply(strsplit(fnFs, "_"), `[`, 1)
+```{r, include = FALSE}
+# Commentaires
+
+#F c'est pour foward et R pour reverse
 # apply
 # on garde que ce qui est séparé par underscore
 
-# Specify the full path to the fnFs and fnRs
 # on change ce qu'il y a ds objets
 # contruire un chemin vers fichier à partir de composant, independant de la plateforme
+```
+
+Extract sample names, assuming filenames have format: SAMPLENAME_XXX.fastq
+
+```{r}
+sampleNames <- sapply(strsplit(fnFs, "_"), `[`, 1)
+
+# Specify the full path to the fnFs and fnRs
 fnFs <- file.path(miseq_path, fnFs)
 fnRs <- file.path(miseq_path, fnRs)
 ```
@@ -98,9 +117,9 @@ fnRs[1:3]
 
 Most Illumina sequencing data shows a trend of decreasing average quality towards the end of sequencing reads.
 The first two forward reads:
-```{r}
+
+```{r, include = FALSE}
 # va lire les 2 premiers elements en Foward
-plotQualityProfile(fnFs[1:2])
 # score de qualité
 #heat map de la freq des score de qualité pour chacune des positions
 # donc en noir: pour tous les read, le score de qualité associé a chacune des bases le plus frequent c'est 38
@@ -112,9 +131,6 @@ plotQualityProfile(fnFs[1:2])
 #--> distribution des longueur de read
 #plus une seq est longue, plus on a d'erreur
 
-
-# pour les reverses
-plotQualityProfile(fnRs[1:2])
 #perte de qualité à partir d'une longueur de 125
 # a fin de seq on a score de qualité de 25
 
@@ -133,23 +149,42 @@ plotQualityProfile(fnRs[1:2])
 ```
 
 ```{r}
+# Pour les foward
+plotQualityProfile(fnFs[1:2])
 
-#We define the filenames for the filtered fastq.gz files:
+# Pour les reverse
+plotQualityProfile(fnRs[1:2])
+```
+We define the filenames for the filtered fastq.gz files:
 
-  #on creer un path filtered
+```{r, include=FALSE}
+#on creer un path filtered
   # on le met dans filtered/ subdirectory
-filt_path <- file.path(miseq_path, "filtered") # "filtered" est le nouv endroit ou ya. nos objet
-if(!file_test("-d", filt_path)) 
-  dir.create(filt_path)
-  #le -d correspond à un element du file path
+
+# pour filt_path = "filtered" est le nouv endroit ou ya. nos objet
+
+# dans le if 
+#le -d correspond à un element du file path
   # si file_test n'est pas -d et dans le filtered path, alors dir.create provide a low-level
   #interface to the computer's file system.
 
-filtFs <- file.path(filt_path, paste0(sampleNames, "_F_filt.fasta.gz")) #filtered path pour les fowards, on cherche le filtered path et on trie par le nom du sample
-filtRs <- file.path(filt_path, paste0(sampleNames, "_R_filt.fastq.gz"))
+ #filtFs = filtered path pour les fowards, on cherche le filtered path et on trie par le nom du sample
 ```
 
 ```{r}
+filt_path <- file.path(miseq_path, "filtered") 
+
+if(!file_test("-d", filt_path)) 
+  dir.create(filt_path)
+
+
+filtFs <- file.path(filt_path, paste0(sampleNames, "_F_filt.fasta.gz"))
+filtRs <- file.path(filt_path, paste0(sampleNames, "_R_filt.fastq.gz"))
+```
+
+Filter the forward and reverse reads:
+
+```{r, include=FALSE}
 # combine trimming parameters with standard filtering parameters
 
 # Filter the forward and reverse reads:
@@ -157,8 +192,10 @@ filtRs <- file.path(filt_path, paste0(sampleNames, "_R_filt.fastq.gz"))
 # cette fonction prend une fichier fastq suivant certain critère def et contient les reads trimmed
 # en imput on met les files de reverse et foward
 # dans ce cas le filtering is performed on the forward and reverse reads independently, and both reads must pass for the read pair to be output.
+```
 
 
+```{r}
 out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160), maxN=0, maxEE=c(2,2),truncQ=2, rm.phix=TRUE,compress=TRUE, multithread=TRUE)
 # out filte et compresse tous ca dans le fichier
 
@@ -166,6 +203,8 @@ out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160), maxN=0, ma
 head(out)
 ```
 
+
+###Infer sequence variants
 
 ```{r}
 # Infer sequence variants
@@ -178,72 +217,101 @@ head(out)
 # Dereplication
   # la fonction de replicating amplicon sequences from fastq or compressed fastq files, while also controlling peak memory   requirement to support large files.
   # combines all identical sequencing reads into into “unique sequences” # with a corresponding “abundance”
+
+```
+#### Dereplication
+
+```{r}
   derepFs <- derepFastq(filtFs, verbose=TRUE)
   derepRs <- derepFastq(filtRs, verbose=TRUE)
 
-  # Name the derep-class objects by the sample names
+# Name the derep-class objects by the sample names
   names(derepFs) <- sampleNames #en fait il recoivent les nom des ech
   names(derepRs) <- sampleNames
 
 ```
 
 ```{r}
-  errF <- learnErrors(filtFs, multithread=TRUE) # error F ou R 
+  errF <- learnErrors(filtFs, multithread=TRUE) 
+```
+
+```{r}
   errR <- learnErrors(filtRs, multithread=TRUE)
+```
+
+```{r, include=FALSE}
+# error F ou R 
+
   # 33514080 total bases in 139642 reads from 20 samples will be used for #learning the error rates.
   #22342720 total bases in 139642 reads from 20 samples will be used for #learning the error rates.
   # --> ce sont les profil d'erreur
 
-  plotErrors(errF)
-  plotErrors(errR)
   # verify that the error rates
   # --> show the frequencies of each type of transition as a function of #the quality.
   #pour chacune des mutation posible: que A remplace A à une proba tres haute, ou C par C, T par T ......
 
   # difference entre OTU (a cause erreur de seq, on a pleins de variant)
   # si on retire variant, on a plus OTU, donc 2 unité ecologique proches sont considéré comme pareille
+```
 
-  # pooling improves the detection of rare variants
+```{r}
+  plotErrors(errF, main = "Estimated Error rates for foward")
+  plotErrors(errR, main = "Estimated Error rates for reverse")
+```
+
+Pooling improves the detection of rare variants
+```{r}
   dadaFs <- dada(derepFs, err=errF, multithread=TRUE)
   dadaRs <- dada(derepRs, err=errR, multithread=TRUE)
 ```
 
+Inspecting the dada-class object returned by dada:
 ```{r}  
-  
-# Inspecting the dada-class object returned by dada:
-  
-  dadaFs[[1]] #liste de liste
-  # 128 sequence variants were inferred from 1979 
+  dadaFs[[1]]  
 ```
 
-```{r}
-#Construct sequence table and remove chimeras
+```{r, include=FALSE} 
+#dadaFs[[1]] est une
+#liste de liste
+  # 128 sequence variants were inferred from 1979
+```
 
+###Construct sequence table and remove chimeras
+
+```{r}
   # sequence table --> sample by sequence feature table valued by the 
   # number of times each sequence was observed in each sample.
-  mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs)
+
   # merge each denoised pair of forward and reverse reads, rejecting any pairs which do not 
   # sufficiently overlap or contain too many
-  
+
   # cnostruction table seq qui resume combien de fois est obs chacun des asv
-  seqtabAll <- makeSequenceTable(mergers[!grepl("Mock", names(mergers))])
-  table(nchar(getSequences(seqtabAll)))
   # 251 252 253 254 255 
   #  1  85 186   5   2
   # Notably, chimeras have not yet been removed
   #nombre de fois dans lequel apparaissent echantillions
 
-  seqtabNoC <- removeBimeraDenovo(seqtabAll)
   # chimerasmake up about 22% of the inferred sequence variants
   # but they are rare (4%)
-  seqtabNoC
 ```
 
 ```{r}
+  mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs)
+
+  seqtabAll <- makeSequenceTable(mergers[!grepl("Mock", names(mergers))])
+  table(nchar(getSequences(seqtabAll)))
+
+  seqtabNoC <- removeBimeraDenovo(seqtabAll)
+  seqtabNoC
+```
+
+Les chimères contituent environ 22% des variants mais ont une abondance rare de 4%
+
+###Assign taxonomy
+```{r, include=FALSE}
 # Assign taxonomy
   # --> dada2 package, va comparer les otu qu'ona fomer et va les identifier ?
   # --> cluster à 97% d'identifier
-
 
   # on doit telecharger :   silva_nr99_v138.1_train_set.fa
   # faut le mettre sur la VM
@@ -253,25 +321,41 @@ head(out)
   #unname(head(taxTab))
 
   #fastaRef <- "/home/ecogenomique2/ecogenomiqueM1MFAprojet/silva_nr99_v138.1_train_set.fa"
-  fastaRef <- "/home/rstudio/silva_nr99_v138.1_train_set.fa"
-  taxTab <- assignTaxonomy(seqtabNoC, refFasta = fastaRef, multithread=TRUE) 
-  unname(head(taxTab))
-  taxTab
-  
 ```
 
 ```{r}
+  fastaRef <- "/home/rstudio/silva_nr99_v138.1_train_set.fa"
+  taxTab <- assignTaxonomy(seqtabNoC, refFasta = fastaRef, multithread=TRUE) 
+  unname(head(taxTab))
+```  
+  
+```{r}
+  taxTab
+```
+
+###Construct phylogenetic tree
+
+```{r, include=FALSE}
 #Construct phylogenetic tree
 
   #calculation of phylogeny-aware distances between microbial communities
-  seqs <- getSequences(seqtabNoC) # fonction de dada 2 qui recup seq ds seqtaNoC auquel ont a enelevé les chimere
+
+# seqs = fonction de dada 2 qui recup seq ds seqtaNoC auquel ont a enelevé les chimere
   # montre niv occurence de chaque ech
   # table d'obs
 
-  names(seqs) <- seqs # This propagates to the tip labels of the tree
-  alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA,verbose=FALSE)
+# names
+  # This propagates to the tip labels of the tree
+```
 
-  # The phangorn R package is then used to construct a phylogenetic tree
+```{r}
+  seqs <- getSequences(seqtabNoC) 
+  names(seqs) <- seqs 
+  alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA,verbose=FALSE)
+```
+
+The phangorn R package is then used to construct a phylogenetic tree
+```{r}
   phangAlign <- phyDat(as(alignment, "matrix"), type="DNA")
   dm <- dist.ml(phangAlign)
   treeNJ <- NJ(dm) # Note, tip order != sequence order
@@ -280,21 +364,14 @@ head(out)
   fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE,
         rearrangement = "stochastic", control = pml.control(trace = 0))
      detach("package:phangorn", unload=TRUE)
-  
-  fitGTR
-    #Rate matrix:
-   # a c g t
-  #a 0 1 1 1
-  #c 1 0 1 1
-  #g 1 1 0 1
-  #t 1 1 1 0
-
-  #Base frequencies:  
-  #0.25 0.25 0.25 0.25
-  
-  plot(fitGTR)
-
 ```
+
+```{r}
+  fitGTR
+  plot(fitGTR)
+```
+
+###Combine data into a phyloseq object
 
 ```{r}
 ps_connect <-url("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/ps.rds")
@@ -302,39 +379,37 @@ ps = readRDS(ps_connect)
 ps
 ```
 
+Combine data into a phyloseq object
 ```{r}
-# Combine data into a phyloseq object
-
   samdf <- read.csv("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/MIMARKS_Data_combined.csv",header=TRUE)
   samdf$SampleID <- paste0(gsub("00", "", samdf$host_subject_id), "D", samdf$age-21)
   samdf <- samdf[!duplicated(samdf$SampleID),] # Remove dupicate entries for reverse reads
   rownames(seqtabAll) <- gsub("124", "125", rownames(seqtabAll)) # Fix discrepancy
   all(rownames(seqtabAll) %in% samdf$SampleID) # TRUE
+```
 
-
+```{r}
   rownames(samdf) <- samdf$SampleID
   keep.cols <- c("collection_date", "biome", "target_gene", "target_subfragment","host_common_name", "host_subject_id", "age", "sex", "body_product", "tot_mass", "diet", "family_relationship", "genotype", "SampleID") 
   samdf <- samdf[rownames(seqtabAll), keep.cols]
 ```
   
-
+```{r, include=FALSE}
   #The full suite of data for this study – the sample-by-sequence feature table, the sample metadata, 
   #the sequence taxonomies, and the phylogenetic tree – can now be combined into a single object.
+# Remove mock sample
+```
+
+```{r}
   ps <- phyloseq(otu_table(seqtabNoC, taxa_are_rows=FALSE), 
                sample_data(samdf), 
                tax_table(taxTab),phy_tree(fitGTR$tree))
-  ps <- prune_samples(sample_names(ps) != "Mock", ps) # Remove mock sample
-  ps
-  
-    ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 215 taxa and 19 samples ]
-    ## sample_data() Sample Data:       [ 19 samples by 14 sample variables ]
-    ## tax_table()   Taxonomy Table:    [ 215 taxa by 6 taxonomic ranks ]
-     ## phy_tree()    Phylogenetic Tree: [ 215 tips and 213 internal nodes ]
+  ps <- prune_samples(sample_names(ps) != "Mock", ps) 
+```
 
+##Using phyloseq
 
-
-```{r}
+```{r, include=FALSE}
 # Using phyloseq
   # phyloseq is an R package 
   # table metadonnées des OTU
@@ -342,10 +417,13 @@ ps
 # Loading the data
   # pas beosin de le faire (recuperer objet phylosec sur lien)
   # "https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/ps.rds"
+```
 
+###Filtering
 
-# Filtering
-  #Taxonomic Filtering
+####Taxonomic Filtering
+```{r}
+
     # on peut enlever seq en se basant sur asignation taxonomique
     # seq non indentifiée (quand phylum est null ou uncharacterize)
     rank_names(ps)
@@ -355,101 +433,114 @@ ps
     prevdf = apply(X = otu_table(ps),
                   MARGIN = ifelse(taxa_are_rows(ps), yes = 1, no = 2),
                    FUN = function(x){sum(x > 0)})
-    # Add taxonomy and total read counts to this data.frame
+```
+
+Add taxonomy and total read counts to this data.frame
+```{r}
     prevdf = data.frame(Prevalence = prevdf,
                         TotalAbundance = taxa_sums(ps),
                         tax_table(ps))
-    
-    # Compute the total and average prevalences of the features in each phylum.
-    plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))})
-
-    
-    # Define phyla to filter
-      filterPhyla = c("Fusobacteria", "Deinococcus-Thermus")
-      # Filter entries with unidentified Phylum.
-      ps1 = subset_taxa(ps, !Phylum %in% filterPhyla)
-      ps1
-      
-      
 ```
 
-
-
-
+Compute the total and average prevalences of the features in each phylum.
 ```{r}
+    plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))})
+
+```
+
+Define phyla to filter
+```{r}    
+      filterPhyla = c("Fusobacteria", "Deinococcus-Thermus")
+```
+
+Filter entries with unidentified Phylum.
+```{r}   
+      ps1 = subset_taxa(ps, !Phylum %in% filterPhyla)
+      ps1
+```
+
+```{r, include=FALSE}
 #.cran_packages <- c( "shiny","miniUI", "caret", "pls", "e1071", "ggplot2", "randomForest", "dplyr", "ggrepel", "nlme", "devtools","reshape2", "PMA", "structSSI", "ade4","ggnetwork", "intergraph", "scales")
 #.github_packages <- c("jfukuyama/phyloseqGraphTest")
 #.bioc_packages <- c("genefilter", "impute")
 ```
 
-```{r}
+```{r, include=FALSE}
 #.inst <- .cran_packages %in% installed.packages()
 #if (any(!.inst)){
 #  install.packages(.cran_packages[!.inst],repos = "http://cran.rstudio.com/")
 #}
 ```
 
-```{r}
+```{r, include=FALSE}
 #.inst <- .github_packages %in% installed.packages()
 #if (any(!.inst)){
 #  devtools::install_github(.github_packages[!.inst])
 #}
 ```
 
-```{r}
+```{r, include=FALSE}
 #.inst <- .bioc_packages %in% installed.packages()
 #if(any(!.inst)){BiocManager::install(.bioc_packages[!.inst])
 #}
 ```
 
 
+####Prevalence Filtering
 
+Subset to the remaining phyla
 ```{r}
-# Prevalence Filtering
-
-  # Subset to the remaining phyla
-# Include a guess for parameter
 prevdf1 = subset(prevdf, Phylum %in% get_taxa_unique(ps1, "Phylum"))
-
-ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps),color=Phylum)) + geom_hline(yintercept = 0.05, alpha = 0.5, linetype = 2) +  geom_point(size = 2, alpha = 0.7) + scale_x_log10() +  xlab("Total Abundance") + ylab("Prevalence [Frac. Samples]") + facet_wrap(~Phylum) + theme(legend.position="none")
-
 ```
 
+Include a guess for parameter
 ```{r}
+ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps),color=Phylum)) + geom_hline(yintercept = 0.05, alpha = 0.5, linetype = 2) +  geom_point(size = 2, alpha = 0.7) + scale_x_log10() +  xlab("Total Abundance") + ylab("Prevalence [Frac. Samples]") + facet_wrap(~Phylum) + theme(legend.position="none")
+```
 
-  # Define prevalence threshold as 5% of total samples
+Define prevalence threshold as 5% of total samples
+```{r}
   prevalenceThreshold = 0.05 * nsamples(ps)
   prevalenceThreshold
-  # Execute prevalence filter, using `prune_taxa()` function
+```
+
+Execute prevalence filter, using `prune_taxa()` function
+```{r}
   keepTaxa = rownames(prevdf1)[(prevdf1$Prevalence >= prevalenceThreshold)]
   ps2 = prune_taxa(keepTaxa, ps)
 ``` 
- 
+
+
+###Agglomerate taxa
+
+How many genera would be present after filtering?
 ```{r} 
-# Agglomerate taxa
-  # How many genera would be present after filtering?
   length(get_taxa_unique(ps2, taxonomic.rank = "Genus"))
   ps3 = tax_glom(ps2, "Genus", NArm = TRUE)
-  
+```
+
+```{r} 
   h1 = 0.4
   ps4 = tip_glom(ps2, h = h1)
+```
+
+```{r} 
   multiPlotTitleTextSize = 15
   p2tree = plot_tree(ps2, method = "treeonly",ladderize = "left",title = "Before Agglomeration") + theme(plot.title = element_text(size = multiPlotTitleTextSize)) 
   p3tree = plot_tree(ps3, method = "treeonly", ladderize = "left", title = "By Genus") + theme(plot.title = element_text(size = multiPlotTitleTextSize))
   p4tree = plot_tree(ps4, method = "treeonly",ladderize = "left", title = "By Height") + theme(plot.title = element_text(size = multiPlotTitleTextSize))
-  
+```
+
+Group plots together:
+```{r}  
   grid.arrange(nrow = 1, p2tree, p3tree, p4tree)
 ``` 
 
 
+###Abundance value transformation
 
-
+Arbitrary subset, based on Phylum, for plotting
 ```{r}  
-# Abundance value transformation
-  
-
-  # Arbitrary subset, based on Phylum, for plotting
-
   plot_abundance = function(physeq,title = "", Facet = "Order", Color = "Phylum"){
       p1f = subset_taxa(physeq, Phylum %in% c("Firmicutes"))
       mphyseq = psmelt(p1f)
@@ -459,36 +550,32 @@ ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps),color=Phylum)) + g
 
 ```
  
- 
+Transform to relative abundance. Save as new object.
 ```{r}
-  
-  # Transform to relative abundance. Save as new object.
   ps3ra = transform_sample_counts(ps3, function(x){x / sum(x)})
+```
 
+```{r}
   plotBefore = plot_abundance(ps3,"")
   plotAfter = plot_abundance(ps3ra,"")
   # Combine each plot into one graphic.
   grid.arrange(nrow = 2,  plotBefore, plotAfter)
 ```
 
-
+###Subset by taxonomy
 ```{r}  
-  
-# Subset by taxonomy
   psOrd = subset_taxa(ps3ra, Order == "Lactobacillales")
   plot_abundance(psOrd, Facet = "Genus", Color = NULL)
-  
-
-  
 ```
 
+###Preprocessing
 ```{r}
-#Preprocessing
   qplot(sample_data(ps)$age, geom = "histogram",binwidth=20) + xlab("age")
   qplot(log10(rowSums(otu_table(ps))),binwidth=0.2) +
   xlab("Logged counts-per-sample")
-  
-  
+```
+
+```{r}
   sample_data(ps)$age_binned <- cut(sample_data(ps)$age,breaks = c(0, 100, 200, 400))
 levels(sample_data(ps)$age_binned) <- list(Young100="(0,100]", Mid100to200="(100,200]", Old200="(200,400]")
 sample_data(ps)$family_relationship=gsub(" ","",sample_data(ps)$family_relationship)
@@ -496,22 +583,27 @@ pslog <- transform_sample_counts(ps, function(x) log(1 + x))
 out.wuf.log <- ordinate(pslog, method = "MDS", distance = "wunifrac")
 evals <- out.wuf.log$values$Eigenvalues
 plot_ordination(pslog, out.wuf.log, color = "age_binned") + labs(col = "Binned Age") +coord_fixed(sqrt(evals[2] / evals[1]))
-  
-rel_abund <- t(apply(otu_table(ps), 1, function(x) x / sum(x)))
-qplot(rel_abund[, 12], geom = "histogram",binwidth=0.05) +
-  xlab("Relative abundance")
-
-
 ```
 
 ```{r}
-# Different Ordination Projections
+rel_abund <- t(apply(otu_table(ps), 1, function(x) x / sum(x)))
+qplot(rel_abund[, 12], geom = "histogram",binwidth=0.05) +
+  xlab("Relative abundance")
+```
 
+
+##Different Ordination Projections
+
+```{r}
 outliers <- c("F5D165", "F6D165", "M3D175", "M4D175", "M5D175", "M6D175")
 ps <- prune_samples(!(sample_names(ps) %in% outliers), ps)
+```
 
+```{r}
 which(!rowSums(otu_table(ps)) > 1000)
+```
 
+```{r}
 ps <- prune_samples(rowSums(otu_table(ps)) > 1000, ps)
 pslog <- transform_sample_counts(ps, function(x) log(1 + x))
 ```
@@ -520,29 +612,38 @@ pslog <- transform_sample_counts(ps, function(x) log(1 + x))
 out.pcoa.log <- ordinate(pslog,  method = "MDS", distance = "bray")
 evals <- out.pcoa.log$values[,1]
 plot_ordination(pslog, out.pcoa.log, color = "age_binned", shape = "family_relationship") + labs(col = "Binned Age", shape = "Litter")+ coord_fixed(sqrt(evals[2] / evals[1]))
-
-out.dpcoa.log <- ordinate(pslog, method = "DPCoA")
-evals <- out.dpcoa.log$eig
-plot_ordination(pslog, out.dpcoa.log, color = "age_binned", label= "SampleID", shape = "family_relationship") + labs(col = "Binned Age", shape = "Litter")+ coord_fixed(sqrt(evals[2] / evals[1]))
-
 ```
 
 ```{r}
+out.dpcoa.log <- ordinate(pslog, method = "DPCoA")
+evals <- out.dpcoa.log$eig
+plot_ordination(pslog, out.dpcoa.log, color = "age_binned", label= "SampleID", shape = "family_relationship") + labs(col = "Binned Age", shape = "Litter")+ coord_fixed(sqrt(evals[2] / evals[1]))
+```
 
+```{r}
 plot_ordination(pslog, out.dpcoa.log, type = "species", color = "Phylum") + coord_fixed(sqrt(evals[2] / evals[1]))
+```
 
+```{r}
 out.wuf.log <- ordinate(pslog, method = "PCoA", distance ="wunifrac")
 evals <- out.wuf.log$values$Eigenvalues
 plot_ordination(pslog, out.wuf.log, color = "age_binned",
                   shape = "family_relationship") + coord_fixed(sqrt(evals[2] / evals[1])) + labs(col = "Binned Age", shape = "Litter")
-
 ```
 
-Why are the ordination plots so far from square?
-Aspect ratio of ordination plots
-PCA on ranks
-```{r}
+```{r, include=FALSE}
+#Why are the ordination plots so far from square?
+#Aspect ratio of ordination plots
+#PCA on ranks
+```
 
+
+###Why are the ordination plots so far from square?
+
+####Aspect ratio of ordination plots
+
+####PCA on ranks
+```{r}
 abund <- otu_table(pslog)
 abund_ranks <- t(apply(abund, 1, rank))
 
@@ -567,11 +668,6 @@ ggplot(abund_df %>%
              position = position_jitter(width = 0.2), size = 1.5) +labs(x = "Abundance", y = "Thresholded rank") + scale_color_brewer(palette = "Set2")
 ```
 
-
-
-A PARTIR DE LA CA FONCTIONNE PLUS
-
-
 ```{r}
 library(ade4)
 ranks_pca <- dudi.pca(abund_ranks, scannf = FALSE, nf = 3)
@@ -590,9 +686,7 @@ row_scores <- row_scores %>%
   left_join(sample_data(pslog))
 col_scores <- col_scores %>%
   left_join(tax)
-
 ```
-
 
 ```{r}
 evals_prop <- 100 * (ranks_pca$eig / sum(ranks_pca$eig))
@@ -609,12 +703,13 @@ ggplot() +
   theme(panel.border = element_rect(color = "#787878", fill = alpha("white", 0)))
 ```
 
+####Canonical correspondence
 
 ```{r}
-
 ps_ccpna <- ordinate(pslog, "CCA", formula = pslog ~ age_binned + family_relationship)
+```
 
-
+```{r}
 library(ggrepel)
 ps_scores <- vegan::scores(ps_ccpna)
 sites <- data.frame(ps_scores$sites)
@@ -627,18 +722,5 @@ species$otu_id <- seq_along(colnames(otu_table(ps)))
 species <- species %>%
   left_join(tax)
 evals_prop <- 100 * ps_ccpna$CCA$eig[1:2] / sum(ps_ccpna$CA$eig)
-ggplot() +
-  geom_point(data = sites, aes(x = CCA1, y = CCA2), shape = 2, alpha = 0.5) +
-  geom_point(data = species, aes(x = CCA1, y = CCA2, col = Order), size = 0.5) +
-  geom_text_repel(data = species %>% filter(CCA2 < -2),
-                    aes(x = CCA1, y = CCA2, label = otu_id),
-            size = 1.5, segment.size = 0.1) +
-  facet_grid(. ~ family_relationship) +
-  guides(col = guide_legend(override.aes = list(size = 3))) +
-  labs(x = sprintf("Axis1 [%s%% variance]", round(evals_prop[1], 2)),
-        y = sprintf("Axis2 [%s%% variance]", round(evals_prop[2], 2))) +
-  scale_color_brewer(palette = "Set2") +
-  coord_fixed(sqrt(ps_ccpna$CCA$eig[2] / ps_ccpna$CCA$eig[1])*0.45   ) +
-  theme(panel.border = element_rect(color = "#787878", fill = alpha("white", 0)))
-
+ggplot() + geom_point(data = sites, aes(x = CCA1, y = CCA2), shape = 2, alpha = 0.5) + geom_point(data = species, aes(x = CCA1, y = CCA2, col = Order), size = 0.5) + geom_text_repel(data = species %>% filter(CCA2 < -2), aes(x = CCA1, y = CCA2, label = otu_id), size = 1.5, segment.size = 0.1) + facet_grid(. ~ family_relationship) + guides(col = guide_legend(override.aes = list(size = 3))) + labs(x = sprintf("Axis1 [%s%% variance]", round(evals_prop[1], 2)), y = sprintf("Axis2 [%s%% variance]", round(evals_prop[2], 2))) + scale_color_brewer(palette = "Set2") + coord_fixed(sqrt(ps_ccpna$CCA$eig[2] / ps_ccpna$CCA$eig[1])*0.45   ) + theme(panel.border = element_rect(color = "#787878", fill = alpha("white", 0)))
 ```
