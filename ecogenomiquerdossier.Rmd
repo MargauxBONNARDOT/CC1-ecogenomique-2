@@ -255,8 +255,8 @@ head(out)
 ```
 
 ```{r}
-  plotErrors(errF, main = "Estimated Error rates for foward")
-  plotErrors(errR, main = "Estimated Error rates for reverse")
+  plotErrors(errF)
+  plotErrors(errR)
 ```
 
 Pooling improves the detection of rare variants
