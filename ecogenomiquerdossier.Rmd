@@ -31,6 +31,28 @@ sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
                   "ggnetwork", "intergraph", "scales")
 .github_packages <- c("jfukuyama/phyloseqGraphTest")
 .bioc_packages <- c("genefilter", "impute")
+
+# Install CRAN packages (if not already installed)
+.inst <- .cran_packages %in% installed.packages()
+if (any(!.inst)){
+  install.packages(.cran_packages[!.inst],repos = "http://cran.rstudio.com/")
+}
+.inst <- .github_packages %in% installed.packages()
+if (any(!.inst)){
+  devtools::install_github(.github_packages[!.inst])
+}
+
+.inst <- .bioc_packages %in% installed.packages()
+if(any(!.inst)){
+  source("http://bioconductor.org/biocLite.R")
+  biocLite(.bioc_packages[!.inst])
+}
+
+library(dplyr)
+library(reshape2)
+library(ade4)
+library(ggrepel)
+
 ```
 
 ```{r, include = FALSE}
@@ -223,6 +245,7 @@ head(out)
   # combines all identical sequencing reads into into “unique sequences” # with a corresponding “abundance”
 
 ```
+
 #### Dereplication
 
 ```{r}
@@ -426,8 +449,8 @@ Combine data into a phyloseq object
 ###Filtering
 
 ####Taxonomic Filtering
-```{r}
 
+```{r}
     # on peut enlever seq en se basant sur asignation taxonomique
     # seq non indentifiée (quand phylum est null ou uncharacterize)
     rank_names(ps)
@@ -573,29 +596,6 @@ Transform to relative abundance. Save as new object.
   plot_abundance(psOrd, Facet = "Genus", Color = NULL)
 ```
 
-```{r}
-.cran_packages <- c( "shiny","miniUI", "caret", "pls", "e1071", "ggplot2", "randomForest", "dplyr", "ggrepel", "nlme", "devtools",
-                  "reshape2", "PMA", "structSSI", "ade4",
-                  "ggnetwork", "intergraph", "scales")
-.github_packages <- c("jfukuyama/phyloseqGraphTest")
-.bioc_packages <- c("genefilter", "impute")
-# Install CRAN packages (if not already installed)
-.inst <- .cran_packages %in% installed.packages()
-if (any(!.inst)){
-  install.packages(.cran_packages[!.inst],repos = "http://cran.rstudio.com/")
-}
-.inst <- .github_packages %in% installed.packages()
-if (any(!.inst)){
-  devtools::install_github(.github_packages[!.inst])
-}
-
-.inst <- .bioc_packages %in% installed.packages()
-if(any(!.inst)){
-  source("http://bioconductor.org/biocLite.R")
-  biocLite(.bioc_packages[!.inst])
-}
-```
-
 ###Preprocessing
 
 ```{r}
@@ -681,8 +681,6 @@ abund_ranks[abund_ranks < 1] <- 1
 ```
 
 ```{r}
-library(dplyr)
-library(reshape2)
 abund_df <- melt(abund, value.name = "abund") %>%
   left_join(melt(abund_ranks, value.name = "rank"))
 colnames(abund_df) <- c("sample", "seq", "abund", "rank")
@@ -698,7 +696,6 @@ ggplot(abund_df %>%
 ```
 
 ```{r}
-library(ade4)
 ranks_pca <- dudi.pca(abund_ranks, scannf = FALSE, nf = 3)
 row_scores <- data.frame(li = ranks_pca$li,SampleID = rownames(abund_ranks))
 col_scores <- data.frame(co = ranks_pca$co,seq = colnames(abund_ranks))
@@ -725,7 +722,6 @@ ps_ccpna <- ordinate(pslog, "CCA", formula = pslog ~ age_binned + family_relatio
 ```
 
 ```{r}
-library(ggrepel)
 ps_scores <- vegan::scores(ps_ccpna)
 sites <- data.frame(ps_scores$sites)
 sites$SampleID <- rownames(sites)
