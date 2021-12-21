@@ -48,6 +48,10 @@ if(any(!.inst)){
   biocLite(.bioc_packages[!.inst])
 }
 
+ps_connect <-url("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/ps.rds")
+ps = readRDS(ps_connect)
+ps
+
 library(dplyr)
 library(reshape2)
 library(ade4)
@@ -449,7 +453,6 @@ Combine data into a phyloseq object
 ###Filtering
 
 ####Taxonomic Filtering
-
 ```{r}
     # on peut enlever seq en se basant sur asignation taxonomique
     # seq non indentifiée (quand phylum est null ou uncharacterize)
