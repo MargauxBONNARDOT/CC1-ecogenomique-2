@@ -699,7 +699,7 @@ ggplot(abund_df %>%
 ```
 
 ```{r}
-ranks_pca <- dudi.pca(abund_ranks, scannf = FALSE, nf = 3)
+ranks_pca <- dudi.pca(abund_ranks, scannf = F, nf = 3)
 row_scores <- data.frame(li = ranks_pca$li,SampleID = rownames(abund_ranks))
 col_scores <- data.frame(co = ranks_pca$co,seq = colnames(abund_ranks))
 
