@@ -2,14 +2,18 @@ Workflow for Microbiome Data Analysis: from raw reads to community
 analyses
 ================
 
-#Workflow for Microbiome Data Analysis: from raw reads to community
-analyses.
+# Workflow for Microbiome Data Analysis: from raw reads to community analyses.
 
 Margaux BONNARDOT M1 MFA
 
-##Methods
+## Methods
 
-###Amplicon bioinformatics: from raw reads to tables
+### Amplicon bioinformatics: from raw reads to tables
+
+``` r
+library("knitr")
+library("BiocStyle")
+```
 
 ``` r
 .cran_packages <- c("ggplot2", "gridExtra", "devtools")
@@ -17,92 +21,6 @@ Margaux BONNARDOT M1 MFA
 .bioc_packages <- c("dada2", "phyloseq", "DECIPHER", "phangorn")
 sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
 ```
-
-    ## Loading required package: ggplot2
-
-    ## Loading required package: gridExtra
-
-    ## Loading required package: devtools
-
-    ## Loading required package: usethis
-
-    ## Loading required package: dada2
-
-    ## Loading required package: Rcpp
-
-    ## Loading required package: phyloseq
-
-    ## Loading required package: DECIPHER
-
-    ## Loading required package: Biostrings
-
-    ## Loading required package: BiocGenerics
-
-    ## 
-    ## Attaching package: 'BiocGenerics'
-
-    ## The following object is masked from 'package:gridExtra':
-    ## 
-    ##     combine
-
-    ## The following objects are masked from 'package:stats':
-    ## 
-    ##     IQR, mad, sd, var, xtabs
-
-    ## The following objects are masked from 'package:base':
-    ## 
-    ##     anyDuplicated, append, as.data.frame, basename, cbind, colnames,
-    ##     dirname, do.call, duplicated, eval, evalq, Filter, Find, get, grep,
-    ##     grepl, intersect, is.unsorted, lapply, Map, mapply, match, mget,
-    ##     order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
-    ##     rbind, Reduce, rownames, sapply, setdiff, sort, table, tapply,
-    ##     union, unique, unsplit, which.max, which.min
-
-    ## Loading required package: S4Vectors
-
-    ## Loading required package: stats4
-
-    ## 
-    ## Attaching package: 'S4Vectors'
-
-    ## The following objects are masked from 'package:base':
-    ## 
-    ##     expand.grid, I, unname
-
-    ## Loading required package: IRanges
-
-    ## 
-    ## Attaching package: 'IRanges'
-
-    ## The following object is masked from 'package:phyloseq':
-    ## 
-    ##     distance
-
-    ## Loading required package: XVector
-
-    ## Loading required package: GenomeInfoDb
-
-    ## 
-    ## Attaching package: 'Biostrings'
-
-    ## The following object is masked from 'package:base':
-    ## 
-    ##     strsplit
-
-    ## Loading required package: RSQLite
-
-    ## Loading required package: parallel
-
-    ## Loading required package: phangorn
-
-    ## Loading required package: ape
-
-    ## 
-    ## Attaching package: 'ape'
-
-    ## The following object is masked from 'package:Biostrings':
-    ## 
-    ##     complement
 
     ##   ggplot2 gridExtra  devtools     dada2  phyloseq  DECIPHER  phangorn 
     ##      TRUE      TRUE      TRUE      TRUE      TRUE      TRUE      TRUE
@@ -159,67 +77,9 @@ ps
     ## phy_tree()    Phylogenetic Tree: [ 389 tips and 387 internal nodes ]
 
 ``` r
-library("knitr")
-library("BiocStyle")
 library(dplyr)
-```
-
-    ## 
-    ## Attaching package: 'dplyr'
-
-    ## The following objects are masked from 'package:Biostrings':
-    ## 
-    ##     collapse, intersect, setdiff, setequal, union
-
-    ## The following object is masked from 'package:GenomeInfoDb':
-    ## 
-    ##     intersect
-
-    ## The following object is masked from 'package:XVector':
-    ## 
-    ##     slice
-
-    ## The following objects are masked from 'package:IRanges':
-    ## 
-    ##     collapse, desc, intersect, setdiff, slice, union
-
-    ## The following objects are masked from 'package:S4Vectors':
-    ## 
-    ##     first, intersect, rename, setdiff, setequal, union
-
-    ## The following objects are masked from 'package:BiocGenerics':
-    ## 
-    ##     combine, intersect, setdiff, union
-
-    ## The following object is masked from 'package:gridExtra':
-    ## 
-    ##     combine
-
-    ## The following objects are masked from 'package:stats':
-    ## 
-    ##     filter, lag
-
-    ## The following objects are masked from 'package:base':
-    ## 
-    ##     intersect, setdiff, setequal, union
-
-``` r
 library(reshape2)
 library(ade4)
-```
-
-    ## 
-    ## Attaching package: 'ade4'
-
-    ## The following object is masked from 'package:Biostrings':
-    ## 
-    ##     score
-
-    ## The following object is masked from 'package:BiocGenerics':
-    ## 
-    ##     score
-
-``` r
 library(ggrepel)
 ```
 
@@ -261,7 +121,7 @@ list.files(miseq_path)
     ## [43] "mouse.dpw.metadata"            "mouse.time.design"            
     ## [45] "stability.batch"               "stability.files"
 
-###Filter and Trim
+### Filter and Trim
 
 Sort to unsure foward and reverse reads are in the same order
 
@@ -309,7 +169,7 @@ plotQualityProfile(fnFs[1:2])
     ## Warning: `guides(<scale> = FALSE)` is deprecated. Please use `guides(<scale> =
     ## "none")` instead.
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 ``` r
 # Pour les reverse
@@ -319,7 +179,7 @@ plotQualityProfile(fnRs[1:2])
     ## Warning: `guides(<scale> = FALSE)` is deprecated. Please use `guides(<scale> =
     ## "none")` instead.
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-16-2.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-17-2.png)<!-- -->
 We define the filenames for the filtered fastq.gz files:
 
 ``` r
@@ -351,7 +211,7 @@ head(out)
     ## F3D143_S209_L001_R1_001.fastq     3178      2941
     ## F3D144_S210_L001_R1_001.fastq     4827      4312
 
-###Infer sequence variants
+### Infer sequence variants
 
 ``` r
 # Infer sequence variants
@@ -560,7 +420,7 @@ head(out)
 
     ## Warning: Transformation introduced infinite values in continuous y-axis
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 ``` r
   plotErrors(errR)
@@ -568,7 +428,7 @@ head(out)
 
     ## Warning: Transformation introduced infinite values in continuous y-axis
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-26-2.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-27-2.png)<!-- -->
 
 Pooling improves the detection of rare variants
 
@@ -632,7 +492,7 @@ Inspecting the dada-class object returned by dada:
     ## 128 sequence variants were inferred from 1979 input unique sequences.
     ## Key parameters: OMEGA_A = 1e-40, OMEGA_C = 1e-40, BAND_SIZE = 16
 
-###Construct sequence table and remove chimeras
+### Construct sequence table and remove chimeras
 
 ``` r
   # sequence table --> sample by sequence feature table valued by the 
@@ -5031,7 +4891,7 @@ Inspecting the dada-class object returned by dada:
 Les chimères contituent environ 22% des variants mais ont une abondance
 rare de 4%
 
-###Assign taxonomy
+### Assign taxonomy
 
 ``` r
   fastaRef <- "/home/rstudio/silva_nr99_v138.1_train_set.fa"
@@ -6373,7 +6233,7 @@ rare de 4%
     ## TACGGAGGGTGCAAGCGTTACCCGGAATCACTGGGCGTAAAGGGCGTGTAGGCGGAAATTTAAGTCTGGTTTTAAAGACCGGGGCTCAACCTCGGGGATGGACTGGATACTGGATTTCTTGACCTCTGGAGAGGTAACTGGAATTCCTGGTGTAGCGGTGGAATGCGTAGATACCAGGAGGAACACCAATGGCGAAGGCAAGTTACTGGACAGAAGGTGACGCTGAGGCGCGAAAGTGTGGGGAGCAAACCGG   "Deinococcus"                     
     ## TACGTAGGGGGCGAGCGTTATCCGGATTTATTGGGCGTAAAGGGTGCGTAGGCGGTATGTTAAGTCTAAAATCAAAGCCCGAGGCTTAACCTCGGTTCGTTTTAGAAACTGGCAAACTAGAGTGCAGTAGAGGCAAGTGGAATTTCTAGTGTAGCGGTTAAATGCGTAGATATTAGAAGGAACACCAGTGGCGAAGGCGGCTTGCTGGGCTGTAACTGACGCTGAGGCACGAAAGCGTGGGGAGCAAATAGG    NA
 
-###Construct phylogenetic tree
+### Construct phylogenetic tree
 
 ``` r
   seqs <- getSequences(seqtabNoC) 
@@ -6421,9 +6281,9 @@ The phangorn R package is then used to construct a phylogenetic tree
   plot(fitGTR)
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
 
-###Combine data into a phyloseq object
+### Combine data into a phyloseq object
 
 ``` r
 ps_connect <-url("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/ps.rds")
@@ -6462,11 +6322,11 @@ Combine data into a phyloseq object
   ps <- prune_samples(sample_names(ps) != "Mock", ps) 
 ```
 
-##Using phyloseq
+## Using phyloseq
 
-###Filtering
+### Filtering
 
-####Taxonomic Filtering
+#### Taxonomic Filtering
 
 ``` r
     # on peut enlever seq en se basant sur asignation taxonomique
@@ -6538,7 +6398,7 @@ Filter entries with unidentified Phylum.
     ## tax_table()   Taxonomy Table:    [ 218 taxa by 6 taxonomic ranks ]
     ## phy_tree()    Phylogenetic Tree: [ 218 tips and 216 internal nodes ]
 
-####Prevalence Filtering
+#### Prevalence Filtering
 
 Subset to the remaining phyla
 
@@ -6552,7 +6412,7 @@ Include a guess for parameter
 ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps),color=Phylum)) + geom_hline(yintercept = 0.05, alpha = 0.5, linetype = 2) +  geom_point(size = 2, alpha = 0.7) + scale_x_log10() +  xlab("Total Abundance") + ylab("Prevalence [Frac. Samples]") + facet_wrap(~Phylum) + theme(legend.position="none")
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-55-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-56-1.png)<!-- -->
 
 Define prevalence threshold as 5% of total samples
 
@@ -6570,7 +6430,7 @@ Execute prevalence filter, using `prune_taxa()` function
   ps2 = prune_taxa(keepTaxa, ps)
 ```
 
-###Agglomerate taxa
+### Agglomerate taxa
 
 How many genera would be present after filtering?
 
@@ -6602,9 +6462,9 @@ Group plots together:
   grid.arrange(nrow = 1, p2tree, p3tree, p4tree)
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-61-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-62-1.png)<!-- -->
 
-###Abundance value transformation
+### Abundance value transformation
 
 Arbitrary subset, based on Phylum, for plotting
 
@@ -6630,31 +6490,31 @@ Transform to relative abundance. Save as new object.
   grid.arrange(nrow = 2,  plotBefore, plotAfter)
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-64-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-65-1.png)<!-- -->
 
-###Subset by taxonomy
+### Subset by taxonomy
 
 ``` r
   psOrd = subset_taxa(ps3ra, Order == "Lactobacillales")
   plot_abundance(psOrd, Facet = "Genus", Color = NULL)
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-65-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-66-1.png)<!-- -->
 
-###Preprocessing
+### Preprocessing
 
 ``` r
   qplot(sample_data(ps)$age, geom = "histogram",binwidth=20) + xlab("age")
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-66-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-67-1.png)<!-- -->
 
 ``` r
   qplot(log10(rowSums(otu_table(ps))),binwidth=0.2) +
   xlab("Logged counts-per-sample")
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-66-2.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-67-2.png)<!-- -->
 
 ``` r
   sample_data(ps)$age_binned <- cut(sample_data(ps)$age,breaks = c(0, 100, 200, 400))
@@ -6673,7 +6533,7 @@ evals <- out.wuf.log$values$Eigenvalues
 plot_ordination(pslog, out.wuf.log, color = "age_binned") + labs(col = "Binned Age") +coord_fixed(sqrt(evals[2] / evals[1]))
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-67-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-68-1.png)<!-- -->
 
 ``` r
 rel_abund <- t(apply(otu_table(ps), 1, function(x) x / sum(x)))
@@ -6681,9 +6541,9 @@ qplot(rel_abund[, 12], geom = "histogram",binwidth=0.05) +
   xlab("Relative abundance")
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-68-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-69-1.png)<!-- -->
 
-##Different Ordination Projections
+## Different Ordination Projections
 
 ``` r
 outliers <- c("F5D165", "F6D165", "M3D175", "M4D175", "M5D175", "M6D175")
@@ -6707,7 +6567,7 @@ evals <- out.pcoa.log$values[,1]
 plot_ordination(pslog, out.pcoa.log, color = "age_binned", shape = "family_relationship") + labs(col = "Binned Age", shape = "Litter")+ coord_fixed(sqrt(evals[2] / evals[1]))
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-72-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-73-1.png)<!-- -->
 
 ``` r
 out.dpcoa.log <- ordinate(pslog, method = "DPCoA")
@@ -6715,13 +6575,13 @@ evals <- out.dpcoa.log$eig
 plot_ordination(pslog, out.dpcoa.log, color = "age_binned", label= "SampleID", shape = "family_relationship") + labs(col = "Binned Age", shape = "Litter")+ coord_fixed(sqrt(evals[2] / evals[1]))
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-73-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-74-1.png)<!-- -->
 
 ``` r
 plot_ordination(pslog, out.dpcoa.log, type = "species", color = "Phylum") + coord_fixed(sqrt(evals[2] / evals[1]))
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-74-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-75-1.png)<!-- -->
 
 ``` r
 out.wuf.log <- ordinate(pslog, method = "PCoA", distance ="wunifrac")
@@ -6737,19 +6597,19 @@ plot_ordination(pslog, out.wuf.log, color = "age_binned",
                   shape = "family_relationship") + coord_fixed(sqrt(evals[2] / evals[1])) + labs(col = "Binned Age", shape = "Litter")
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-75-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-76-1.png)<!-- -->
 
-###Why are the ordination plots so far from square?
+### Why are the ordination plots so far from square?
 
-####Aspect ratio of ordination plots
+#### Aspect ratio of ordination plots
 
-####PCA on ranks
+#### PCA on ranks
 
 ``` r
 abund <- otu_table(pslog)
 abund_ranks <- t(apply(abund, 1, rank))
 
-abund_ranks <- abund_ranks - 329
+abund_ranks <- abund_ranks - 329 
 abund_ranks[abund_ranks < 1] <- 1
 ```
 
@@ -6774,4 +6634,4 @@ sample_ix <- sample(1:nrow(abund_df), 8)
 ggplot(abund_df %>% filter(sample %in% abund_df$sample[sample_ix])) +geom_point(aes(x = abund, y = rank, col = sample), position = position_jitter(width = 0.2), size = 1.5) +labs(x = "Abundance", y = "Thresholded rank") + scale_color_brewer(palette = "Set2")
 ```
 
-![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-78-1.png)<!-- -->
+![](ecogenomiquerdossier_files/figure-gfm/unnamed-chunk-79-1.png)<!-- -->

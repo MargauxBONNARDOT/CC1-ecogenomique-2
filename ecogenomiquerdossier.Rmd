@@ -18,6 +18,11 @@ M1 MFA
 #sudo apt-get install -y liblzma-dev libbz2-dev
 ```
 
+```{r}
+library("knitr")
+library("BiocStyle")
+```
+
 ```{r, cache=TRUE}
 .cran_packages <- c("ggplot2", "gridExtra", "devtools")
 
@@ -53,8 +58,6 @@ ps
 ```
 
 ```{r}
-library("knitr")
-library("BiocStyle")
 library(dplyr)
 library(reshape2)
 library(ade4)
