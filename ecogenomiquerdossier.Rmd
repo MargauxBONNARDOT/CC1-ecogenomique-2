@@ -3,14 +3,14 @@ title: "Workflow for Microbiome Data Analysis: from raw reads to community analy
 output: github_document
 ---
 
-#Workflow for Microbiome Data Analysis: from raw reads to community analyses.
+# Workflow for Microbiome Data Analysis: from raw reads to community analyses.
 
 Margaux BONNARDOT
 M1 MFA
 
-##Methods
+## Methods
 
-###Amplicon bioinformatics: from raw reads to tables
+### Amplicon bioinformatics: from raw reads to tables
 
 ```{bash, include = FALSE}
 #sudo apt-get update -y
@@ -112,7 +112,7 @@ list.files(miseq_path)
 #sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
 ```
 
-###Filter and Trim
+### Filter and Trim
 
 Sort to unsure foward and reverse reads are in the same order
 
@@ -237,7 +237,7 @@ head(out)
 ```
 
 
-###Infer sequence variants
+### Infer sequence variants
 
 ```{r}
 # Infer sequence variants
@@ -310,7 +310,7 @@ Inspecting the dada-class object returned by dada:
   # 128 sequence variants were inferred from 1979
 ```
 
-###Construct sequence table and remove chimeras
+### Construct sequence table and remove chimeras
 
 ```{r}
   # sequence table --> sample by sequence feature table valued by the 
@@ -341,7 +341,7 @@ Inspecting the dada-class object returned by dada:
 
 Les chimères contituent environ 22% des variants mais ont une abondance rare de 4%
 
-###Assign taxonomy
+### Assign taxonomy
 ```{r, include=FALSE}
 # Assign taxonomy
   # --> dada2 package, va comparer les otu qu'ona fomer et va les identifier ?
@@ -367,7 +367,7 @@ Les chimères contituent environ 22% des variants mais ont une abondance rare de
   taxTab
 ```
 
-###Construct phylogenetic tree
+### Construct phylogenetic tree
 
 ```{r, include=FALSE}
 #Construct phylogenetic tree
@@ -405,7 +405,7 @@ The phangorn R package is then used to construct a phylogenetic tree
   plot(fitGTR)
 ```
 
-###Combine data into a phyloseq object
+### Combine data into a phyloseq object
 
 ```{r}
 ps_connect <-url("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/ps.rds")
@@ -441,7 +441,7 @@ Combine data into a phyloseq object
   ps <- prune_samples(sample_names(ps) != "Mock", ps) 
 ```
 
-##Using phyloseq
+## Using phyloseq
 
 ```{r, include=FALSE}
 # Using phyloseq
@@ -453,9 +453,9 @@ Combine data into a phyloseq object
   # "https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/ps.rds"
 ```
 
-###Filtering
+### Filtering
 
-####Taxonomic Filtering
+#### Taxonomic Filtering
 ```{r}
     # on peut enlever seq en se basant sur asignation taxonomique
     # seq non indentifiée (quand phylum est null ou uncharacterize)
@@ -519,7 +519,7 @@ Filter entries with unidentified Phylum.
 ```
 
 
-####Prevalence Filtering
+#### Prevalence Filtering
 
 Subset to the remaining phyla
 ```{r}
@@ -544,7 +544,7 @@ Execute prevalence filter, using `prune_taxa()` function
 ``` 
 
 
-###Agglomerate taxa
+### Agglomerate taxa
 
 How many genera would be present after filtering?
 ```{r} 
@@ -570,7 +570,7 @@ Group plots together:
 ``` 
 
 
-###Abundance value transformation
+### Abundance value transformation
 
 Arbitrary subset, based on Phylum, for plotting
 ```{r}  
@@ -595,14 +595,14 @@ Transform to relative abundance. Save as new object.
   grid.arrange(nrow = 2,  plotBefore, plotAfter)
 ```
 
-###Subset by taxonomy
+### Subset by taxonomy
 
 ```{r}  
   psOrd = subset_taxa(ps3ra, Order == "Lactobacillales")
   plot_abundance(psOrd, Facet = "Genus", Color = NULL)
 ```
 
-###Preprocessing
+### Preprocessing
 
 ```{r}
   qplot(sample_data(ps)$age, geom = "histogram",binwidth=20) + xlab("age")
@@ -627,7 +627,7 @@ qplot(rel_abund[, 12], geom = "histogram",binwidth=0.05) +
 ```
 
 
-##Different Ordination Projections
+## Different Ordination Projections
 
 ```{r}
 outliers <- c("F5D165", "F6D165", "M3D175", "M4D175", "M5D175", "M6D175")
@@ -673,17 +673,17 @@ plot_ordination(pslog, out.wuf.log, color = "age_binned",
 ```
 
 
-###Why are the ordination plots so far from square?
+### Why are the ordination plots so far from square?
 
-####Aspect ratio of ordination plots
+#### Aspect ratio of ordination plots
 
-####PCA on ranks
+#### PCA on ranks
 
 ```{r}
 abund <- otu_table(pslog)
 abund_ranks <- t(apply(abund, 1, rank))
 
-abund_ranks <- abund_ranks - 329
+abund_ranks <- abund_ranks - 329 
 abund_ranks[abund_ranks < 1] <- 1
 ```
 
